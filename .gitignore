@@ -1,0 +1,30 @@
+# Secrets: never commit real keys
+.env
+.env.*
+!.env.example
+
+# Local-only data pack (database + product images)
+data/
+*.db
+*.db-journal
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+backend/.image_cache/
+
+# Node / Vite
+node_modules/
+frontend/dist/
+
+# Audit-trail temp / quarantined files (the trail itself is committed)
+output/*.tmp
+output/*.unreadable-*.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

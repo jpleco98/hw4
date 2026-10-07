@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Campus Customs: App Check (HW4 Problem 11)</title>
+<style>
+  :root { --yale:#00356b; --midnight:#001a38; --ivory:#f8f5ef; --paper:#fffdf9; --stone:#e6dfd2; --ink:#151c2b; --muted:#5d6472;
+          --pass:#1e6b34; --pass-bg:#e7f3ea; --fail:#a32a1d; --fail-bg:#fbe9e6; --fix:#00356b; --fix-bg:#e3ecf7; --obs:#a8530f; --obs-bg:#fbefe2; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--ivory); color:var(--ink); line-height:1.6; }
+  header { background:var(--yale); color:#fff; padding:2.2rem 1.5rem 1.8rem; }
+  header .wrap, main { max-width: 1040px; margin: 0 auto; }
+  header h1 { margin:0 0 .3rem; font-family: Georgia, "Times New Roman", serif; font-weight:600; font-size:2rem; }
+  header p { margin:.2rem 0; opacity:.9; }
+  main { padding: 1.5rem; }
+  h2 { font-family: Georgia, serif; color:var(--midnight); margin: 0 0 .4rem; font-size:1.45rem; }
+  h3 { margin: 1.4rem 0 .5rem; font-size: 1rem; color: var(--midnight); }
+  .card { background:var(--paper); border:1px solid var(--stone); border-radius:12px; padding:1.4rem 1.5rem; margin: 0 0 1.6rem; }
+  .status { display:inline-block; font-size:.75rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:.2rem .6rem; border-radius:999px; margin-left:.5rem; vertical-align:middle; }
+  .pass { background:var(--pass-bg); color:var(--pass); } .fail { background:var(--fail-bg); color:var(--fail); }
+  .fixed { background:var(--fix-bg); color:var(--fix); } .obs { background:var(--obs-bg); color:var(--obs); }
+  table { border-collapse: collapse; width:100%; font-size:.92rem; margin:.4rem 0 1rem; }
+  th, td { text-align:left; padding:.5rem .7rem; border-bottom:1px solid var(--stone); vertical-align:top; }
+  th { background:#efe9df; font-size:.78rem; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+  figure { margin: 1rem 0 1.4rem; }
+  figure a { display:block; }
+  figure img { display:block; max-width:100%; border:1px solid var(--stone); border-radius:8px; box-shadow:0 6px 18px rgba(0,26,56,.08); }
+  figure.narrow img { max-width: 520px; }
+  figcaption { font-size:.9rem; color:var(--muted); margin-top:.5rem; }
+  figcaption b { color: var(--ink); }
+  .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items:start; }
+  @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+  .note { background:#eef3f9; border-left:4px solid var(--yale); padding:.7rem 1rem; border-radius:6px; font-size:.93rem; }
+  code { background:#efe9df; padding:.05rem .35rem; border-radius:4px; font-size:.88em; }
+  .toc a { color: var(--yale); }
+  footer { text-align:center; color:var(--muted); font-size:.82rem; padding: 1rem 0 2.5rem; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Campus Customs: App Check</h1>
+    <p>HW4 Problem 11 · Hands-on test of the running site (React + Vite frontend at <code>localhost:5173</code>, FastAPI + Pydantic AI backend at <code>localhost:8000</code>).</p>
+    <p>Tester's checks and comments, plus complementary checks by the AI assistant. Click any screenshot to open it full size.</p>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Summary</h2>
+    <table>
+      <tr><th>#</th><th>Check</th><th>Result</th></tr>
+      <tr><td>1</td><td><a href="#check-1">Inventory level in the chat vs. the size the shopper asked for</a></td><td><span class="status fail">Bug found</span> <span class="status fixed">Fixed &amp; re-tested</span></td></tr>
+      <tr><td>2</td><td><a href="#check-2">Dynamic search-result cards after a category question, and opening the item page</a></td><td><span class="status pass">Pass</span></td></tr>
+      <tr><td>3</td><td><a href="#check-3">Honesty of the reply text: sold-out sizes and the fact-check badge</a> <i>(complementary)</i></td><td><span class="status pass">Pass</span></td></tr>
+      <tr><td>4</td><td><a href="#check-4">Product photo quality on cards</a> <i>(complementary)</i></td><td><span class="status obs">Observation</span> <span class="status fixed">Fixed (follow-up)</span></td></tr>
+    </table>
+    <p class="note"><b>Test scenario used throughout:</b> as a guest, ask Handsome Dan <i>"Hi! I want a gift for my dad, he uses hoodies or t-shirts size L"</i>. Database truth for the matched items (from <code>inventory</code>): <b>Yale Dad Hoodie</b>: XS 5 · S 5 · M 12 · <b>L 20</b> · XL 12 · XXL 15 (total 69). <b>Yale Dad T Shirt</b>: XS 20 · S 12 · M 20 · <b>L 15</b> · XL 0 · XXL 12 (total 79).</p>
+  </section>
+
+  <!-- ===================== CHECK 1 ===================== -->
+  <section class="card" id="check-1">
+    <h2>Check 1: Inventory level in the chat <span class="status fail">Bug found</span> <span class="status fixed">Fixed</span></h2>
+    <p><b>Tester's comment:</b> the chatbot shows a stock number that is the <i>sum of all sizes</i>, but when I open the product and check the size I actually asked for (L), there is much less stock than the chat said.</p>
+
+    <h3>Before the fix</h3>
+    <div class="grid2">
+      <figure>
+        <a href="app_check_images/inventory_chat_before.png"><img src="app_check_images/inventory_chat_before.png" alt="Chat reply showing 69 in stock and 79 in stock on the product cards" /></a>
+        <figcaption><b>Chat, before.</b> I asked for gifts in <b>size L</b>. The reply text is fine, but the mini-cards say <b>"69 in stock"</b> (hoodie) and <b>"79 in stock"</b> (tee), which are the totals across all six sizes.</figcaption>
+      </figure>
+      <figure>
+        <a href="app_check_images/inventory_product_page_size_L.png"><img src="app_check_images/inventory_product_page_size_L.png" alt="Yale Dad Hoodie product page with size L selected showing 20 in stock" /></a>
+        <figcaption><b>Product page, size L.</b> Opening the Yale Dad Hoodie and selecting L shows <b>"20 in stock in L"</b>. That's the real number for my size, far below the 69 the chat card implied.</figcaption>
+      </figure>
+    </div>
+
+    <h3>Root cause</h3>
+    <p>The agent's text was correct, but the chat cards always displayed the product's <code>total_stock</code>. The API contract had no way to say <i>which size</i> the shopper was asking about, so the frontend couldn't show the right number. For a shopper this is misleading: a hoodie can look well stocked while their size is almost gone or sold out.</p>
+
+    <h3>Fix (made after this check)</h3>
+    <ul>
+      <li><b>Agent output:</b> <code>ShopReply.size</code> was added. When the shopper mentions a size, the agent sets it (here <code>"L"</code>). The backend validates it to XS–XXL and returns it as <code>ChatReply.size</code>. The prompt also tells the agent never to quote the all-sizes total when a size was asked for.</li>
+      <li><b>Chat cards</b> now show stock for that size (<i>"L: 20 in stock"</i>, or <i>"Sold out in L"</i>). Without a size they say <i>"69 in stock (all sizes)"</i> so the total is never mistaken for a size count.</li>
+      <li><b>Results grid</b> outlines the requested size on every card's size strip and prints its count. The banner says "stock shown for size L".</li>
+      <li><b>Card links</b> open the product page with <code>?size=L</code>, so the size picker <b>starts on L</b>.</li>
+    </ul>
+
+    <h3>After the fix (re-test, same question)</h3>
+    <figure>
+      <a href="app_check_images/inventory_chat_after_fix.jpg"><img src="app_check_images/inventory_chat_after_fix.jpg" alt="Chat and results grid now showing L: 20 in stock and L: 15 in stock" /></a>
+      <figcaption><b>Chat + page, after.</b> The chat cards now read <b>"L: 20 in stock"</b> and <b>"L: 15 in stock"</b>, exactly the database values for size L. The grid on the left outlines <b>L</b> in each size strip with the same counts underneath.</figcaption>
+    </figure>
+    <figure>
+      <a href="app_check_images/product_page_size_preselected.jpg"><img src="app_check_images/product_page_size_preselected.jpg" alt="Product page opened from the chat card with size L pre-selected" /></a>
+      <figcaption><b>Product page opened from the chat card.</b> The URL is <code>/products/yale-dad-hoodie?size=L</code>, <b>L is already selected</b> and it shows "20 in stock in L". The chat, the cards and the item page now all tell the shopper the same number.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===================== CHECK 2 ===================== -->
+  <section class="card" id="check-2">
+    <h2>Check 2: Dynamic search-result cards <span class="status pass">Pass</span></h2>
+    <p><b>Tester's comment:</b> after a category-style question, the matching products appear on the page as cards. It's upfront and easy to use. The products show right away in the chat and on the page, and clicking through to see more detail is easy.</p>
+    <figure>
+      <a href="app_check_images/search_results_cards.png"><img src="app_check_images/search_results_cards.png" alt="Results grid titled Yale dad gifts in size L with two product cards" /></a>
+      <figcaption><b>Results grid.</b> Dan switched the Products page to a banner titled <b>"Yale dad gifts in size L"</b> (2 items, with the original question quoted) and two full product cards with image, category, name, short description, price and size strip. The banner offers <i>Browse all products</i> and <i>Clear results</i>.</figcaption>
+    </figure>
+    <p><b>Complementary verification:</b> the cards' data comes from the database, not from the model's text. The T-shirt's size strip shows <b>XL struck through</b>, which matches <code>inventory</code> (Yale Dad T Shirt XL = 0). Clicking a card opens the single-item page shown in Check 1 (large image, description, colors, size picker), and the page offers <i>"← Back to your chat results"</i> to return to the grid.</p>
+  </section>
+
+  <!-- ===================== CHECK 3 ===================== -->
+  <section class="card" id="check-3">
+    <h2>Check 3: Honesty of the reply text <span class="status pass">Pass</span> <i style="font-size:.8rem;color:var(--muted)">(complementary)</i></h2>
+    <p>In the re-test (screenshot <i>after the fix</i> above), Dan also volunteered: <i>"The Yale Dad Crewneck is also in the catalog, but it's sold out in size L."</i> Checked against the database: Yale Dad Crewneck L = <b>0</b> (M and XL are also 0). That's correct, and it's the helpful kind of honesty: the shopper learns the item exists but won't fit the request, instead of being shown it.</p>
+    <p>Every reply that states a price or stock number carries the green <b>"✓ Verified against live inventory"</b> badge (visible in both chat screenshots). The backend fact-checker compared <b>$68.00</b> and <b>$32.00</b> with the tool results before the reply was shown.</p>
+  </section>
+
+  <!-- ===================== CHECK 4 ===================== -->
+  <section class="card" id="check-4">
+    <h2>Check 4: Product photo quality <span class="status obs">Observation</span> <span class="status fixed">Fixed</span> <i style="font-size:.8rem;color:var(--muted)">(complementary)</i></h2>
+    <p><b>Observation:</b> in the screenshots above, the hoodie and tee photos have <b>black bars</b> on the sides. They are <b>baked into the catalogue image files</b>, not added by the site. A scan of <code>data/products/</code> found <b>73 of 102</b> photos with black bars, and in <b>45</b> of them the whole background is black.</p>
+
+    <h3>Fix (tester's follow-up: "yes, trim the black bars on the photos")</h3>
+    <ul>
+      <li><b>Originals untouched.</b> <code>backend/images.py</code> processes each photo on first request and caches the result in <code>backend/.image_cache/</code>. The <code>/media/products/{file}.jpg</code> route only serves files that really exist in <code>data/products</code> (checked by exact name), so <code>../campus_customs.db</code> and similar paths return 404.</li>
+      <li><b>Step 1, trim bars:</b> crop to the bounding box of non-black content, then pad back to a square. This is applied to all <b>73</b> photos with bars. The 29 clean photos are unchanged.</li>
+      <li><b>Step 2, black backgrounds:</b> flood-fill the black from the photo edges to white, so the fill only spreads through connected near-black pixels. A safety check measures how much "not-quite-black" (garment-colored) area got whitened. On good photos it's under 0.1%; when it leaks into a very dark navy garment it's 45–60%. In that case stricter thresholds are tried, and if all of them leak, the photo <b>keeps its black background</b> rather than risk damaging the product. Result: <b>41 whitened, 4 deliberately kept on black</b> (Basic Hoodie Big Yale, Boola Boola tee, Football and Track &amp; Field left-chest tees, all near-black navy).</li>
+    </ul>
+    <figure>
+      <a href="app_check_images/photos_trim_before_after.jpg"><img src="app_check_images/photos_trim_before_after.jpg" alt="Before and after comparison of five product photos" /></a>
+      <figcaption><b>Before / after.</b> The Yale Dad Hoodie loses its side bars, and the Yale Dad tee, Baseball crewneck and Berkeley fleece move from black to clean white backgrounds. The near-black Basic Hoodie (right) is <b>protected</b>: whitening would have eaten into the garment, so it stays on black, just trimmed.</figcaption>
+    </figure>
+    <figure>
+      <a href="app_check_images/photos_grid_after_trim.jpg"><img src="app_check_images/photos_grid_after_trim.jpg" alt="Hoodies grid after trimming, uniform white tiles" /></a>
+      <figcaption><b>Hoodies grid, after.</b> The catalogue now reads as one consistent, premium set of white tiles. The single dark tile is the protected Basic Hoodie.</figcaption>
+    </figure>
+  </section>
+
+  <footer>Campus Customs · AI Foundations HW4 · Screenshots in <code>app_check_images/</code></footer>
+</main>
+</body>
+</html>
